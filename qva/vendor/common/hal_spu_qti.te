@@ -25,8 +25,38 @@
 # OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
 # IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-/(vendor|system/vendor)/bin/hw/android\.hardware\.biometrics\.face@1\.0-service    u:object_r:vendor_biometricsface_exec:s0
+type hal_spu_qti, domain;
+type hal_spu_qti_exec, exec_type, vendor_file_type, file_type;
+init_daemon_domain(hal_spu_qti)
 
-/data/vendor/face3d_dir(/.*)?                                       u:object_r:vendor_biometricsface_data_file:s0
+hal_server_domain(hal_spu_qti, hal_spu)
 
-/vendor/bin/embmsslServer       u:object_r:hal_embmssl_qti_exec:s0
+# Allow access to hal_allocator
+hal_client_domain(hal_spu_qti, hal_allocator)
+
+# Allow hal_spu client domain apps to find hwservice
+binder_call(hal_spu_client, hal_spu_server)
+binder_call(hal_spu_server, hal_spu_client)
+
+# Allow the service to be added to hwservice list
+hal_attribute_hwservice(hal_spu, hal_spu_hwservice)
+
+# Allow access to spss_utils device
+allow hal_spu_qti spss_utils_device:chr_file rw_file_perms;
+
+# Allow access to spcom devices
+allow hal_spu_qti spcom_device:chr_file rw_file_perms;
+allow hal_spu_qti skp_device:chr_file rw_file_perms;
+allow hal_spu_qti sp_ssr_device:chr_file rw_file_perms;
+allow hal_spu_qti cryptoapp_device:chr_file rw_file_perms;
+allow hal_spu_qti iuicc_device:chr_file rw_file_perms;
+allow hal_spu_qti spu_hal_ssr_device:chr_file rw_file_perms;
+
+# Alloc acess to ion_device
+allow hal_spu_qti ion_device:chr_file rw_file_perms;
+
+# Allow set / get spcomlib prop
+set_prop(hal_spu_qti, spcomlib_prop)
+
+# Vendor binder
+use_vendor_per_mgr(hal_spu_qti)

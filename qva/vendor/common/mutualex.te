@@ -1,5 +1,5 @@
-# Copyright (c) 2018-2019, The Linux Foundation. All rights reserved.
-
+# Copyright (c) 2019, The Linux Foundation. All rights reserved.
+#
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are
 # met:
@@ -25,15 +25,31 @@
 # OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
 # IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-allow hal_tetheroffload_default ipa_dev:chr_file rw_file_perms;
-allow hal_tetheroffload_default ipacm_socket:sock_file w_file_perms;
+type mutualex, domain;
+type mutualex_exec, exec_type, vendor_file_type, file_type;
+init_daemon_domain(mutualex)
 
-allow hal_tetheroffload_default ipa_vendor_data_file:dir w_dir_perms;
-allow hal_tetheroffload_default ipa_vendor_data_file:file create_file_perms;
+allow mutualex mutualex:{
+    qipcrtr_socket
+    netlink_generic_socket
+}create_socket_perms_no_ioctl;
 
-#add_hwservice(hal_tetheroffload_default, hal_tetheroffload_hwservice)
+hal_client_domain(mutualex,hal_wifi_hostapd)
+hal_client_domain(mutualex,hal_wifi_supplicant)
 
-#diag
-userdebug_or_eng(`
-    r_dir_file(hal_tetheroffload_default, sysfs_diag)
-')
+# allow mutualex to access wpa_socket
+allow mutualex wifi_vendor_data_file:dir r_dir_perms;
+allow mutualex wifi_vendor_wpa_socket:sock_file write;
+
+#communicating with wpa supplicant for sending commands/listening to events
+unix_socket_send(mutualex, wpa, hal_wifi_supplicant)
+allow mutualex wpa_data_file:dir w_dir_perms;
+allow mutualex wpa_data_file:sock_file create_file_perms;
+
+#communicating with hostapd for sending commands/listening to events
+allow mutualex hostapd_data_file:dir rw_dir_perms;
+allow mutualex hostapd_data_file:sock_file create_file_perms;
+allow mutualex { hal_wifi_hostapd_default }:unix_dgram_socket sendto;
+
+wakelock_use(mutualex)
+
